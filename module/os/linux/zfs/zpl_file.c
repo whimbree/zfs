@@ -659,6 +659,12 @@ zpl_readpage_common(struct page *pp)
 	cookie = spl_fstrans_mark();
 	int error = -zfs_getpage(pp->mapping->host, pp);
 	spl_fstrans_unmark(cookie);
+	if (!error && !PagePrivate(pp)) {
+		/* Set private bit so that page migration will wait for us to
+		 * finish writeback before calling migrate_folio(). */
+		SetPagePrivate(pp);
+		get_page(pp);
+	}
 
 	unlock_page(pp);
 
@@ -815,6 +821,54 @@ zpl_writepage(struct page *pp, struct writeback_control *wbc)
 
 	return (zpl_putpage(pp, wbc, &for_sync));
 }
+
+static int
+zpl_releasepage(struct page *pp, gfp_t gfp)
+{
+	if (PagePrivate(pp))
+	{
+		ClearPagePrivate(pp);
+		put_page(pp);
+	}
+	return 1;
+}
+
+#ifdef HAVE_VFS_RELEASE_FOLIO
+static bool
+zpl_release_folio(struct folio *folio, gfp_t gfp)
+{
+	return zpl_releasepage(&folio->page, gfp);
+}
+#endif
+
+#ifdef HAVE_VFS_INVALIDATE_FOLIO
+static void
+zpl_invalidate_folio(struct folio *folio, size_t offset, size_t len)
+{
+	if ((offset == 0) && (len == PAGE_SIZE))
+	{
+		zpl_releasepage(&folio->page, 0);
+	}
+}
+#elif defined(HAVE_VFS_INVALIDATE_PAGE_WITH_LEN)
+static void
+zpd_invalidate_page(struct page *pp, unsigned int offset, unsigned int len)
+{
+	if ((offset == 0) && (len == PAGE_SIZE))
+	{
+		zpl_releasepage(pp, 0);
+	}
+}
+#else
+static void
+zpd_invalidate_page(struct page *pp, unsigned int offset)
+{
+	if (offset == 0)
+	{
+		zpl_releasepage(pp, 0);
+	}
+}
+#endif
 
 /*
  * The flag combination which matches the behavior of zfs_space() is
@@ -1303,6 +1357,16 @@ const struct address_space_operations zpl_address_space_operations = {
 #endif
 #ifdef HAVE_VFS_FILEMAP_DIRTY_FOLIO
 	.dirty_folio	= filemap_dirty_folio,
+#endif
+#ifdef HAVE_VFS_RELEASE_FOLIO
+	.release_folio	= zpl_release_folio,
+#else
+	.releasepage	= zpl_releasepage,
+#endif
+#ifdef HAVE_VFS_INVALIDATE_FOLIO
+	.invalidate_folio = zpl_invalidate_folio,
+#else
+	.invalidate_page = zpl_invalidate_page,
 #endif
 };
 
