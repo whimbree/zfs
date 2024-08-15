@@ -14,7 +14,7 @@ AC_DEFUN([ZFS_AC_KERNEL_SRC_VFS_INVALIDATE_PAGE_WITH_LEN], [
 
 		static const struct address_space_operations
 		    aops __attribute__ ((unused)) = {
-			.invalidate_page	= test_invalidate_page,
+			.invalidatepage	= test_invalidate_page,
 		};
 	],[])
 ])

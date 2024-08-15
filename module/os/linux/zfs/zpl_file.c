@@ -846,7 +846,7 @@ zpl_invalidate_folio(struct folio *folio, size_t offset, size_t len)
 }
 #elif defined(HAVE_VFS_INVALIDATE_PAGE_WITH_LEN)
 static void
-zpd_invalidate_page(struct page *pp, unsigned int offset, unsigned int len)
+zpl_invalidate_page(struct page *pp, unsigned int offset, unsigned int len)
 {
 	if ((offset == 0) && (len == PAGE_SIZE))
 	{
@@ -855,7 +855,7 @@ zpd_invalidate_page(struct page *pp, unsigned int offset, unsigned int len)
 }
 #else
 static void
-zpd_invalidate_page(struct page *pp, unsigned int offset)
+zpl_invalidate_page(struct page *pp, unsigned int offset)
 {
 	if (offset == 0)
 	{
@@ -1360,7 +1360,7 @@ const struct address_space_operations zpl_address_space_operations = {
 #ifdef HAVE_VFS_INVALIDATE_FOLIO
 	.invalidate_folio = zpl_invalidate_folio,
 #else
-	.invalidate_page = zpl_invalidate_page,
+	.invalidatepage = zpl_invalidate_page,
 #endif
 };
 
