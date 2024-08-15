@@ -1,0 +1,264 @@
+diff --git a/config/kernel-vfs-invalidate_folio.m4 b/config/kernel-vfs-invalidate_folio.m4
+new file mode 100644
+index 000000000..61a5c8478
+--- /dev/null
++++ b/config/kernel-vfs-invalidate_folio.m4
+@@ -0,0 +1,33 @@
++dnl #
++dnl # Linux 5.18 uses invalidate_folio in lieu of invalidate_page
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_SRC_VFS_INVALIDATE_FOLIO], [
++	ZFS_LINUX_TEST_SRC([vfs_has_invalidate_folio], [
++		#include <linux/fs.h>
++
++		static void
++		test_invalidate_folio(struct folio *folio, size_t offset,
++		                      size_t len) {
++			(void) folio; (void) offset; (void) len;
++			return;
++		}
++
++		static const struct address_space_operations
++		    aops __attribute__ ((unused)) = {
++			.invalidate_folio	= test_invalidate_folio,
++		};
++	],[])
++])
++
++AC_DEFUN([ZFS_AC_KERNEL_VFS_INVALIDATE_FOLIO], [
++	dnl #
++	dnl # Linux 5.18 uses invalidate_folio in lieu of invalidate_page
++	dnl #
++	AC_MSG_CHECKING([whether invalidate_folio exists])
++	ZFS_LINUX_TEST_RESULT([vfs_has_invalidate_folio], [
++		AC_MSG_RESULT([yes])
++		AC_DEFINE(HAVE_VFS_INVALIDATE_FOLIO, 1, [invalidate_folio exists])
++	],[
++		AC_MSG_RESULT([no])
++	])
++])
+diff --git a/config/kernel-vfs-invalidate_page_has_len.m4 b/config/kernel-vfs-invalidate_page_has_len.m4
+new file mode 100644
+index 000000000..065b0601a
+--- /dev/null
++++ b/config/kernel-vfs-invalidate_page_has_len.m4
+@@ -0,0 +1,33 @@
++dnl #
++dnl # Linux 3.11 has three parameters for invalidate_page
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_SRC_VFS_INVALIDATE_PAGE_WITH_LEN], [
++	ZFS_LINUX_TEST_SRC([vfs_has_invalidate_page_with_len], [
++		#include <linux/fs.h>
++
++		static void
++		test_invalidate_page(struct page *page, unsigned int offset,
++		                     unsigned int len) {
++			(void) page; (void) offset; (void) len;
++			return;
++		}
++
++		static const struct address_space_operations
++		    aops __attribute__ ((unused)) = {
++			.invalidatepage	= test_invalidate_page,
++		};
++	],[])
++])
++
++AC_DEFUN([ZFS_AC_KERNEL_VFS_INVALIDATE_PAGE_WITH_LEN], [
++	dnl #
++	dnl # Linux 3.11 has three parameters for invalidate_page
++	dnl #
++	AC_MSG_CHECKING([whether invalidate_page has len])
++	ZFS_LINUX_TEST_RESULT([vfs_has_invalidate_page_with_len], [
++		AC_MSG_RESULT([yes])
++		AC_DEFINE(HAVE_VFS_INVALIDATE_PAGE_WITH_LEN, 1, [invalidate_page has len])
++	],[
++		AC_MSG_RESULT([no])
++	])
++])
+diff --git a/config/kernel-vfs-release_folio.m4 b/config/kernel-vfs-release_folio.m4
+new file mode 100644
+index 000000000..f31db5677
+--- /dev/null
++++ b/config/kernel-vfs-release_folio.m4
+@@ -0,0 +1,32 @@
++dnl #
++dnl # Linux 5.19 uses release_folio in lieu of releasepage
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_SRC_VFS_RELEASE_FOLIO], [
++	ZFS_LINUX_TEST_SRC([vfs_has_release_folio], [
++		#include <linux/fs.h>
++
++		static bool
++		test_release_folio(struct folio *folio, gfp_t gfp) {
++			(void) folio; (void) gfp;
++			return (0);
++		}
++
++		static const struct address_space_operations
++		    aops __attribute__ ((unused)) = {
++			.release_folio	= test_release_folio,
++		};
++	],[])
++])
++
++AC_DEFUN([ZFS_AC_KERNEL_VFS_RELEASE_FOLIO], [
++	dnl #
++	dnl # Linux 5.19 uses release_folio in lieu of releasepage
++	dnl #
++	AC_MSG_CHECKING([whether release_folio exists])
++	ZFS_LINUX_TEST_RESULT([vfs_has_release_folio], [
++		AC_MSG_RESULT([yes])
++		AC_DEFINE(HAVE_VFS_RELEASE_FOLIO, 1, [release_folio exists])
++	],[
++		AC_MSG_RESULT([no])
++	])
++])
+diff --git a/config/kernel.m4 b/config/kernel.m4
+index 548905ccd..125bd9316 100644
+--- a/config/kernel.m4
++++ b/config/kernel.m4
+@@ -107,6 +107,9 @@ AC_DEFUN([ZFS_AC_KERNEL_TEST_SRC], [
+ 	ZFS_AC_KERNEL_SRC_LSEEK_EXECUTE
+ 	ZFS_AC_KERNEL_SRC_VFS_FILEMAP_DIRTY_FOLIO
+ 	ZFS_AC_KERNEL_SRC_VFS_READ_FOLIO
++	ZFS_AC_KERNEL_SRC_VFS_RELEASE_FOLIO
++	ZFS_AC_KERNEL_SRC_VFS_INVALIDATE_FOLIO
++	ZFS_AC_KERNEL_SRC_VFS_INVALIDATE_PAGE_WITH_LEN
+ 	ZFS_AC_KERNEL_SRC_VFS_GETATTR
+ 	ZFS_AC_KERNEL_SRC_VFS_FSYNC_2ARGS
+ 	ZFS_AC_KERNEL_SRC_VFS_ITERATE
+@@ -257,6 +260,9 @@ AC_DEFUN([ZFS_AC_KERNEL_TEST_RESULT], [
+ 	ZFS_AC_KERNEL_LSEEK_EXECUTE
+ 	ZFS_AC_KERNEL_VFS_FILEMAP_DIRTY_FOLIO
+ 	ZFS_AC_KERNEL_VFS_READ_FOLIO
++	ZFS_AC_KERNEL_VFS_RELEASE_FOLIO
++	ZFS_AC_KERNEL_VFS_INVALIDATE_FOLIO
++	ZFS_AC_KERNEL_VFS_INVALIDATE_PAGE_WITH_LEN
+ 	ZFS_AC_KERNEL_VFS_GETATTR
+ 	ZFS_AC_KERNEL_VFS_FSYNC_2ARGS
+ 	ZFS_AC_KERNEL_VFS_ITERATE
+diff --git a/module/os/linux/zfs/zfs_vnops_os.c b/module/os/linux/zfs/zfs_vnops_os.c
+index 1cecad9f7..3ce2a03f5 100644
+--- a/module/os/linux/zfs/zfs_vnops_os.c
++++ b/module/os/linux/zfs/zfs_vnops_os.c
+@@ -259,6 +259,13 @@ update_pages(znode_t *zp, int64_t start, int len, objset_t *os)
+ 			} else {
+ 				ClearPageError(pp);
+ 				SetPageUptodate(pp);
++				if (!PagePrivate(pp)) {
++					/* Set private bit so page migration
++					 * will wait for us to finish writeback
++					 * before calling migrate_folio(). */
++					SetPagePrivate(pp);
++					get_page(pp);
++				}
+ 
+ 				if (mapping_writably_mapped(mp))
+ 					flush_dcache_page(pp);
+@@ -4023,6 +4030,12 @@ zfs_fillpage(struct inode *ip, struct page *pp)
+ 	} else {
+ 		ClearPageError(pp);
+ 		SetPageUptodate(pp);
++		if (!PagePrivate(pp)) {
++			/* Set private bit so page migration will wait for us to
++			 * finish writeback before calling migrate_folio(). */
++			SetPagePrivate(pp);
++			get_page(pp);
++		}
+ 	}
+ 
+ 	return (error);
+diff --git a/module/os/linux/zfs/zfs_znode.c b/module/os/linux/zfs/zfs_znode.c
+index b99df188c..673e26cf6 100644
+--- a/module/os/linux/zfs/zfs_znode.c
++++ b/module/os/linux/zfs/zfs_znode.c
+@@ -1619,6 +1619,12 @@ zfs_zero_partial_page(znode_t *zp, uint64_t start, uint64_t len)
+ 		mark_page_accessed(pp);
+ 		SetPageUptodate(pp);
+ 		ClearPageError(pp);
++		if (!PagePrivate(pp)) {
++			/* Set private bit so page migration will wait for us to
++			 * finish writeback before calling migrate_folio(). */
++			SetPagePrivate(pp);
++			get_page(pp);
++		}
+ 		unlock_page(pp);
+ 		put_page(pp);
+ 	}
+diff --git a/module/os/linux/zfs/zpl_file.c b/module/os/linux/zfs/zpl_file.c
+index 9dec52215..3e194eec2 100644
+--- a/module/os/linux/zfs/zpl_file.c
++++ b/module/os/linux/zfs/zpl_file.c
+@@ -816,6 +816,54 @@ zpl_writepage(struct page *pp, struct writeback_control *wbc)
+ 	return (zpl_putpage(pp, wbc, &for_sync));
+ }
+ 
++static int
++zpl_releasepage(struct page *pp, gfp_t gfp)
++{
++	if (PagePrivate(pp))
++	{
++		ClearPagePrivate(pp);
++		put_page(pp);
++	}
++	return 1;
++}
++
++#ifdef HAVE_VFS_RELEASE_FOLIO
++static bool
++zpl_release_folio(struct folio *folio, gfp_t gfp)
++{
++	return zpl_releasepage(&folio->page, gfp);
++}
++#endif
++
++#ifdef HAVE_VFS_INVALIDATE_FOLIO
++static void
++zpl_invalidate_folio(struct folio *folio, size_t offset, size_t len)
++{
++	if ((offset == 0) && (len == PAGE_SIZE))
++	{
++		zpl_releasepage(&folio->page, 0);
++	}
++}
++#elif defined(HAVE_VFS_INVALIDATE_PAGE_WITH_LEN)
++static void
++zpl_invalidate_page(struct page *pp, unsigned int offset, unsigned int len)
++{
++	if ((offset == 0) && (len == PAGE_SIZE))
++	{
++		zpl_releasepage(pp, 0);
++	}
++}
++#else
++static void
++zpl_invalidate_page(struct page *pp, unsigned int offset)
++{
++	if (offset == 0)
++	{
++		zpl_releasepage(pp, 0);
++	}
++}
++#endif
++
+ /*
+  * The flag combination which matches the behavior of zfs_space() is
+  * FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE.  The FALLOC_FL_PUNCH_HOLE
+@@ -1304,6 +1352,16 @@ const struct address_space_operations zpl_address_space_operations = {
+ #ifdef HAVE_VFS_FILEMAP_DIRTY_FOLIO
+ 	.dirty_folio	= filemap_dirty_folio,
+ #endif
++#ifdef HAVE_VFS_RELEASE_FOLIO
++	.release_folio	= zpl_release_folio,
++#else
++	.releasepage	= zpl_releasepage,
++#endif
++#ifdef HAVE_VFS_INVALIDATE_FOLIO
++	.invalidate_folio = zpl_invalidate_folio,
++#else
++	.invalidatepage = zpl_invalidate_page,
++#endif
+ };
+ 
+ #ifdef HAVE_VFS_FILE_OPERATIONS_EXTEND
